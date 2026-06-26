@@ -1,3 +1,18 @@
+/**
+ * 文件：styles.css
+ * 所属模块：shared（所有微前端共用的全局样式）
+ * 核心职责：与 shell/src/styles.css 保持一致的视觉体系，供各子应用直接引入使用。
+ *           定义了 CSS 变量、基础重置、布局容器、按钮、卡片、表单、商品卡、
+ *           购物车行、详情页、订单状态、Toast 等通用样式。
+ *
+ * 关键概念：
+ * - CSS 变量（--primary 等）：在 :root 集中定义，全局用 var() 引用，便于换肤。
+ * - flex/grid 布局：flex 处理一维排列，grid 处理二维网格（商品列表、详情双列）。
+ * - @media 响应式：窄屏下把多列压成单列，保证移动端可读性。
+ * - 子应用引入本文件后即可复用这些类名，达到跨微前端样式统一。
+ */
+
+/* ===== 设计变量：颜色 / 圆角 / 阴影，统一在此维护 ===== */
 :root {
   --primary: #0071e3;
   --primary-dark: #0058b0;
@@ -12,8 +27,10 @@
   --radius: 12px;
 }
 
+/* 全局重置：去默认边距，统一 border-box 盒模型 */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* 基础样式：系统字体栈、背景色、文字色、行高 */
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
     "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
@@ -22,11 +39,14 @@ body {
   line-height: 1.6;
 }
 
+/* 链接与按钮基础重置 */
 a { color: inherit; text-decoration: none; }
 button { font-family: inherit; cursor: pointer; }
 
+/* 主应用最外层容器：flex 纵向铺满整屏，Footer 贴底 */
 .app-shell { min-height: 100vh; display: flex; flex-direction: column; }
 
+/* ===== Header 区：顶部导航栏，sticky 吸顶 + 毛玻璃效果 ===== */
 .header {
   background: rgba(255,255,255,0.85);
   backdrop-filter: saturate(180%) blur(20px);
@@ -48,6 +68,7 @@ button { font-family: inherit; cursor: pointer; }
 .btn-text { background: none; border: none; color: var(--text-light); font-size: 13px; padding: 4px 8px; border-radius: 6px; }
 .btn-text:hover { color: var(--danger); background: rgba(255,59,48,0.08); }
 
+/* ===== Buttons 区：各类按钮，统一胶囊圆角 ===== */
 .btn-primary { background: var(--primary); color: #fff; border: none; padding: 8px 18px; border-radius: 980px; font-size: 14px; font-weight: 500; transition: background .15s; display: inline-flex; align-items: center; gap: 6px; }
 .btn-primary:hover { background: var(--primary-dark); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -57,11 +78,13 @@ button { font-family: inherit; cursor: pointer; }
 .btn-danger { background: none; border: none; color: var(--danger); padding: 6px 12px; border-radius: 8px; font-size: 13px; }
 .btn-danger:hover { background: rgba(255,59,48,0.08); }
 
+/* ===== Main 区：主内容容器 + 加载/错误占位 ===== */
 .main-content { flex: 1; max-width: 1200px; width: 100%; margin: 0 auto; padding: 24px; }
 .loading { text-align: center; padding: 60px 0; color: var(--text-light); }
 .error-box { text-align: center; padding: 60px 24px; color: var(--text-light); }
 .error-box h2 { color: var(--danger); margin-bottom: 8px; }
 
+/* ===== Home 区：首页 Hero + 模块卡片网格 + 架构图 ===== */
 .home { padding: 16px 0 40px; }
 .hero { text-align: center; padding: 80px 20px 60px; }
 .hero h1 { font-size: 44px; font-weight: 700; margin-bottom: 16px; }
@@ -77,13 +100,16 @@ button { font-family: inherit; cursor: pointer; }
 .arch-box { background: var(--card); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); overflow-x: auto; }
 .arch-box pre { font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; font-size: 13px; line-height: 1.5; color: var(--text); }
 
+/* ===== Footer 区：底部页脚 ===== */
 .footer { background: #fff; border-top: 1px solid var(--border); padding: 24px; text-align: center; color: var(--text-light); font-size: 13px; }
 .footer-inner { max-width: 1200px; margin: 0 auto; }
 .footer-sub { margin-top: 4px; font-size: 12px; }
 
+/* ===== 通用标题与网格：页面标题 + 商品列表网格 ===== */
 .page-title { font-size: 24px; font-weight: 700; margin-bottom: 20px; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
 
+/* ===== 商品卡片：纵向 flex，价格 margin-top:auto 贴底对齐 ===== */
 .product-card { background: var(--card); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); transition: transform .15s, box-shadow .15s; cursor: pointer; display: flex; flex-direction: column; }
 .product-card:hover { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(0,0,0,0.12); }
 .product-img { height: 180px; display: flex; align-items: center; justify-content: center; font-size: 72px; background: linear-gradient(135deg, #fafafa, #f0f0f3); }
@@ -93,8 +119,10 @@ button { font-family: inherit; cursor: pointer; }
 .product-price { font-size: 18px; font-weight: 700; color: var(--primary); margin-top: auto; }
 .product-rating { font-size: 12px; color: #ff9500; }
 
+/* 通用卡片容器：白底圆角阴影，用于表单、详情等区块 */
 .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; }
 
+/* ===== 表单控件：输入框 / 文本域 / 标签 / 表单组 / 两列行 ===== */
 .input, .textarea { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; font-family: inherit; transition: border .15s; background: #fff; }
 .input:focus, .textarea:focus { outline: none; border-color: var(--primary); }
 .textarea { resize: vertical; min-height: 80px; }
@@ -102,18 +130,23 @@ button { font-family: inherit; cursor: pointer; }
 .form-group { margin-bottom: 16px; }
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
+/* 空状态提示：列表为空时居中显示 */
 .empty { text-align: center; padding: 60px 20px; color: var(--text-light); }
 .empty-icon { font-size: 56px; margin-bottom: 12px; }
 
+/* 标签 tag：胶囊形浅蓝底，用于分类、状态标记 */
 .tag { display: inline-block; padding: 2px 10px; background: rgba(0,113,227,0.1); color: var(--primary); border-radius: 980px; font-size: 12px; font-weight: 500; }
 
+/* 分类筛选条：横向排列可换行的分类芯片 */
 .cat-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
 .cat-chip { padding: 6px 16px; border-radius: 980px; border: 1px solid var(--border); background: #fff; font-size: 13px; transition: all .15s; }
 .cat-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
+/* 搜索框：输入框 + 按钮横向排列 */
 .search-box { display: flex; gap: 8px; margin-bottom: 20px; }
 .search-box .input { flex: 1; }
 
+/* 通用工具类：行布局、两端对齐、浅色字、间距、右对齐、合计行 */
 .row { display: flex; align-items: center; gap: 12px; }
 .row-between { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .muted { color: var(--text-light); font-size: 13px; }
@@ -122,6 +155,7 @@ button { font-family: inherit; cursor: pointer; }
 .text-right { text-align: right; }
 .total-line { font-size: 20px; font-weight: 700; color: var(--primary); }
 
+/* ===== Cart / list items 区：购物车与列表行 + 数量加减控件 ===== */
 .item-row { display: flex; align-items: center; gap: 16px; padding: 16px; border-bottom: 1px solid var(--border); }
 .item-row:last-child { border-bottom: none; }
 .item-img { font-size: 40px; width: 56px; text-align: center; }
@@ -132,19 +166,23 @@ button { font-family: inherit; cursor: pointer; }
 .qty-btn:hover { border-color: var(--text); }
 .qty-val { min-width: 30px; text-align: center; font-weight: 600; }
 
+/* ===== Detail 区：商品详情页，左右两列 grid（左图右信息） ===== */
 .detail { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
 .detail-img { background: linear-gradient(135deg, #fafafa, #f0f0f3); border-radius: var(--radius); display: flex; align-items: center; justify-content: center; font-size: 160px; height: 400px; }
 .detail-info h1 { font-size: 28px; margin-bottom: 12px; }
 .detail-price { font-size: 32px; font-weight: 700; color: var(--primary); margin: 16px 0; }
 .detail-desc { color: var(--text-light); margin-bottom: 24px; line-height: 1.7; }
 
+/* ===== 订单状态标签：不同状态用不同底色区分（待付款/已付款/已发货） ===== */
 .order-status { display: inline-block; padding: 2px 10px; border-radius: 980px; font-size: 12px; font-weight: 600; }
 .order-status.pending { background: #fff3cd; color: #856404; }
 .order-status.paid { background: #d4edda; color: #155724; }
 .order-status.shipped { background: #cce5ff; color: #004085; }
 
+/* Toast 轻提示：固定在屏幕底部居中，用于操作反馈（如“已加入购物车”） */
 .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--text); color: #fff; padding: 12px 24px; border-radius: 10px; font-size: 14px; z-index: 9999; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
 
+/* ===== 响应式：窄屏（≤720px）下多列压成单列，缩小标题与间距 ===== */
 @media (max-width: 720px) {
   .detail { grid-template-columns: 1fr; }
   .field-row { grid-template-columns: 1fr; }

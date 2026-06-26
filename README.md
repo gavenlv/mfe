@@ -2,6 +2,8 @@
 
 每个业务模块是一个独立的微前端（独立 Vite 应用、独立端口），由 Shell 主应用通过 Module Federation 动态加载；后端使用 Express + SQLite 存储数据。
 
+> 📚 **完整设计与学习文档** 见 [`docs/`](./docs/README.md)：架构设计、Module Federation 原理、后端 API、通信机制、逐文件解析、前端知识扫盲，代码已全部加上教学型中文注释，适合零基础学习。
+
 ## 架构
 
 ```
