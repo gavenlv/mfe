@@ -108,6 +108,9 @@ export default function Header() {
           <NavLink to="/" end className={linkClass}>首页</NavLink>
           <NavLink to="/products" className={linkClass}>商品</NavLink>
           <NavLink to="/orders" className={linkClass}>我的订单</NavLink>
+          {/* 进阶演示入口：嵌套联邦 / 多实例 */}
+          <NavLink to="/workspace" className={linkClass}>工作台</NavLink>
+          <NavLink to="/multi" className={linkClass}>多实例</NavLink>
         </nav>
         <div className="header-right">
           <Link to="/cart" className="cart-btn" title="购物车">

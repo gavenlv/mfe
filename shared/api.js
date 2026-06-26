@@ -48,32 +48,59 @@ export function getUser() {
   }
 }
 
+// GET 请求去重表（性能优化）：key = 请求路径，value = 进行中的 Promise。
+// 场景：多实例页里 3 个 products 实例几乎同时挂载，各自调用 api('/products/categories')，
+// 如果不去重会发 3 次一模一样的网络请求。去重后只发 1 次，3 个调用方共享同一个 Promise。
+// 注意：只对“进行中”的请求去重，请求一结束（成功/失败）就删除条目，
+//       之后再有相同 GET 仍会重新发起（不是永久缓存，避免拿到过期数据）。
+const inflightGets = new Map();
+
 // 统一请求函数：所有微前端都通过它访问后端
 // path 是接口路径（如 '/products'），options 透传 method、body 等
 export async function api(path, options = {}) {
-  const token = getToken();
-  // 组装请求头：默认 JSON 格式；有 token 时带上鉴权头；允许调用方覆盖 headers
-  const headers = {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(options.headers || {}),
-  };
-  const res = await fetch(BASE + path, {
-    ...options,
-    headers,
-    // body 传的是对象，要序列化成 JSON 字符串；没 body 时设为 undefined
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
-  // 非 2xx 状态码视为失败，尝试从响应体取出错误信息后抛出
-  if (!res.ok) {
-    let msg = '请求失败';
-    try {
-      const err = await res.json();
-      msg = err.error || msg;
-    } catch {}
-    throw new Error(msg);
+  const method = (options.method || 'GET').toUpperCase();
+  // 仅对无 body 的 GET 请求做并发去重：POST/PUT/DELETE 是写操作，绝不能合并。
+  const canDedupe = method === 'GET' && !options.body;
+  // 已有相同 GET 在进行中：直接复用那个 Promise，不再发新请求
+  if (canDedupe && inflightGets.has(path)) {
+    return inflightGets.get(path);
   }
-  // 204 No Content 没有响应体，直接返回 null，避免 res.json() 报错
-  if (res.status === 204) return null;
-  return res.json();
+
+  // 真正发起请求的异步流程
+  const run = (async () => {
+    const token = getToken();
+    // 组装请求头：默认 JSON 格式；有 token 时带上鉴权头；允许调用方覆盖 headers
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
+    };
+    const res = await fetch(BASE + path, {
+      ...options,
+      headers,
+      // body 传的是对象，要序列化成 JSON 字符串；没 body 时设为 undefined
+      body: options.body ? JSON.stringify(options.body) : undefined,
+    });
+    // 非 2xx 状态码视为失败，尝试从响应体取出错误信息后抛出
+    if (!res.ok) {
+      let msg = '请求失败';
+      try {
+        const err = await res.json();
+        msg = err.error || msg;
+      } catch {}
+      throw new Error(msg);
+    }
+    // 204 No Content 没有响应体，直接返回 null，避免 res.json() 报错
+    if (res.status === 204) return null;
+    return res.json();
+  })();
+
+  // 对可去重的 GET：登记到表里，请求结束后清理（无论成功失败）
+  if (canDedupe) {
+    inflightGets.set(path, run);
+    // finally 在 Promise 结束（resolve 或 reject）后执行，删除条目，
+    // 让后续相同路径的 GET 能重新发起，拿到最新数据
+    run.finally(() => inflightGets.delete(path));
+  }
+  return run;
 }

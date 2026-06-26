@@ -29,6 +29,8 @@ import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 // 主应用首页（本地组件，不走联邦）
 import Home from './pages/Home.jsx';
+// 多实例页（本地组件，内部用联邦加载多个子应用实例）
+import MultiInstance from './pages/MultiInstance.jsx';
 
 // 动态加载微前端（Module Federation 远程模块）
 // import('productsApp/App') 中的 'productsApp' 就是 vite.config.js 里 remotes 的别名，
@@ -37,6 +39,9 @@ const ProductsApp = lazy(() => import('productsApp/App'));
 const CartApp = lazy(() => import('cartApp/App'));
 const AuthApp = lazy(() => import('authApp/App'));
 const OrderApp = lazy(() => import('orderApp/App'));
+// workspaceApp：嵌套联邦演示。它既是 shell 的 remote，自身又加载 products/cart。
+// 加载链路：shell → workspace → products/cart（三层联邦）。
+const WorkspaceApp = lazy(() => import('workspaceApp/App'));
 
 // 加载态占位组件：在远程模块代码下载完成前显示
 function Loading() {
@@ -110,6 +115,10 @@ export default function App() {
             <Route path="/auth/*" element={withBoundary(AuthApp, 'Auth')} />
             <Route path="/orders/*" element={withBoundary(OrderApp, 'Order')} />
             <Route path="/checkout" element={withBoundary(OrderApp, 'Order')} />
+            {/* 嵌套联邦演示页：workspace 内部又加载 products/cart */}
+            <Route path="/workspace" element={withBoundary(WorkspaceApp, 'Workspace')} />
+            {/* 多实例演示页：同时装载多个子应用实例（本地组件，内部用联邦） */}
+            <Route path="/multi" element={<MultiInstance />} />
             {/* 兜底路由：所有未匹配的路径都走到这里，显示 404 */}
             <Route path="*" element={<div className="loading">404 - 页面不存在</div>} />
           </Routes>

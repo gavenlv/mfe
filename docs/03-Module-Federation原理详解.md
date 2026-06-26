@@ -13,7 +13,7 @@
 | **Host（宿主）** | shell | 主动去"引用"别人的模块 |
 | **Remote（远程）** | products / cart / auth / order | 把自己的模块"暴露"给别人用 |
 
-一个应用可以同时是 Host 和 Remote（shell 也可以暴露模块），本项目里 shell 只做 Host。
+一个应用可以同时是 Host 和 Remote——本项目新增的 **workspace** 微前端就是这样：它既被 shell 加载（作为 Remote），又内部加载 products/cart（作为 Host），形成【嵌套联邦】。详见后文及 [08 · 进阶](./08-进阶-嵌套与多实例.md)。
 
 ## 三个核心配置
 
@@ -163,6 +163,55 @@ export default defineConfig({
 
 Host 配置只多了 `remotes`，少了 `exposes`。对照 `shell/vite.config.js` 看。
 
+## 进阶：嵌套联邦（一个应用同时是 Host 和 Remote）
+
+普通联邦只有两层：shell → products（shell 是 Host，products 是 Remote）。**嵌套联邦**多一层：shell → workspace → products/cart。中间的 workspace **同时是 Remote（被 shell 加载）和 Host（自己加载 products/cart）**。
+
+### 为什么可行
+
+关键在 `shared` 的共享作用域是**全局的**。shell 启动时加载的 react 会被缓存进全局共享作用域，workspace 加载时发现"react 已经有了"就直接复用，再往下到 products/cart 也是同一份。**不管中间隔几层，整条链路只有一份 React 实例**，Hooks、Context、Router 全部打通。这就是嵌套联邦能成立的底层原因。
+
+### workspace 同时配置 exposes 和 remotes
+
+`workspace/vite.config.js`：
+
+```js
+federation({
+  name: 'workspaceApp',
+  filename: 'remoteEntry.js',
+  exposes: { './App': './src/App.jsx' },   // 作为 Remote：被 shell 加载
+  remotes: {                                 // 作为 Host：加载 products/cart
+    productsApp: 'http://localhost:5174/assets/remoteEntry.js',
+    cartApp: 'http://localhost:5175/assets/remoteEntry.js',
+  },
+  shared: ['react', 'react-dom', 'react-router-dom'],
+})
+```
+
+`exposes` 和 `remotes` 同时出现，并不冲突——前者声明"我对外提供什么"，后者声明"我对外消费什么"，两个方向互不干扰。
+
+### workspace 里嵌套加载
+
+`workspace/src/App.jsx`：
+
+```jsx
+const ProductsApp = lazy(() => import('productsApp/App'));
+const CartApp = lazy(() => import('cartApp/App'));
+// workspace 自己又被 shell 通过 import('workspaceApp/App') 加载 → 嵌套
+```
+
+shell 加载 workspace 的 `./App`，workspace 内部又加载 products/cart 的 `./App`——一条 import 链穿起三层应用，对调用方来说每一段都和普通 `lazy(() => import(...))` 没区别。
+
+### 关键限制：不能再包 BrowserRouter
+
+workspace 自己也是被 shell 加载的"远程模块"，运行在 shell 的 `BrowserRouter` 上下文里。如果 workspace 再包一层 `BrowserRouter`，就会出现两个 Router 实例，`useLocation/useNavigate` 拿到的是各自的上下文，路由状态对不上。所以 workspace 必须**只用 `useLocation/useNavigate` 接入 shell 的路由**，不自己建 Router。这条规则对所有嵌套层都成立。
+
+### 一句话总结
+
+一个微前端可以同时 `exposes`（被加载）+ `remotes`（加载别人），`shared` 让整条链路共用一份 React——这就是嵌套联邦的全部秘密。
+
+> 完整演示见 [08 · 进阶：嵌套联邦与多实例](./08-进阶-嵌套与多实例.md)。
+
 ## 小结
 
 | 概念 | 一句话 |
@@ -174,5 +223,7 @@ Host 配置只多了 `remotes`，少了 `exposes`。对照 `shell/vite.config.js
 | shared | 公共依赖只加载一份 |
 | remoteEntry.js | Remote 的模块清单 |
 | bootstrap 异步边界 | 让 shared 初始化完成后再用 react |
+| 嵌套联邦 | 一个应用同时是 Host 和 Remote |
+| 多实例 | 同一 lazy 组件渲染多次，各自独立状态 |
 
 下一章 → [04 · 后端 API 与数据库设计](./04-后端-API-与数据库设计.md)

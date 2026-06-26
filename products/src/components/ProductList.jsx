@@ -11,6 +11,14 @@
  *  - 事件冒泡：卡片整体可点击跳详情，但点“加入购物车”按钮不应触发跳转，用 stopPropagation 阻止。
  *  - URLSearchParams：构造查询字符串（?category=xx&q=yy）。
  *
+ * 关键概念——embedded（嵌入模式）与 initialCategory（初始分类）：
+ *  - 进阶用法：本组件除了作为 products 微前端的“页面”被宿主 shell 加载，
+ *    还可能被 workspace 微前端嵌入，或在主应用 /multi 多实例页里同时装载多份。
+ *  - embedded=true：隐藏“全部商品”标题、关闭卡片点击跳详情（仍保留加购），
+ *    让本组件成为一个纯展示+加购的“组件”，不干扰外层路由。
+ *  - initialCategory：传入某个分类名（如 '数码'）作为初始选中分类，
+ *    多个实例分别传入不同值，即可在 UI 上呈现“同子应用不同数据”的效果。
+ *
  * 关于 shared 模块（相对路径 ../../../shared/，跳出 components、src、products 三层到 mfe/shared）：
  *  - api.js：统一的请求封装。调用 api(url, options) 即可发请求，内部自动带上
  *    Authorization: Bearer <token> 头，省去每个调用处手动加 token。
@@ -29,15 +37,19 @@ import { api, getToken } from '../../../shared/api.js';
 import { bus, EVENTS } from '../../../shared/bus.js';
 
 // 商品列表组件
-export default function ProductList() {
+// props 说明：
+//  - initialCategory: string，初始分类（如 '数码'）。默认 'all' 表示全部。
+//  - embedded: boolean，嵌入模式。true 时隐藏标题、禁用卡片跳详情。
+export default function ProductList({ initialCategory, embedded } = {}) {
   // useNavigate 返回一个 navigate 函数，调用即可跳转路由
   const navigate = useNavigate();
   // 商品列表数据，初始为空数组
   const [products, setProducts] = useState([]);
   // 分类列表（从后端拉取），初始空数组
   const [categories, setCategories] = useState([]);
-  // 当前选中的分类，'all' 表示全部
-  const [category, setCategory] = useState('all');
+  // 当前选中的分类。若传入 initialCategory，则以它为初始值（多实例区分数据）；
+  // 否则默认 'all' 表示全部。|| 短路保证传入空字符串时也回退到 'all'。
+  const [category, setCategory] = useState(initialCategory || 'all');
   // 实际用于请求的搜索关键字（按回车/点搜索后才更新）
   const [q, setQ] = useState('');
   // 搜索框实时输入的值（受控），与 q 分离避免每输一个字就发请求
@@ -123,7 +135,8 @@ export default function ProductList() {
 
   return (
     <div>
-      <h1 className="page-title">全部商品</h1>
+      {/* 嵌入模式下隐藏“全部商品”标题，因为外层容器（workspace/multi）已有自己的标题 */}
+      {!embedded && <h1 className="page-title">全部商品</h1>}
 
       <div className="search-box">
         <input
@@ -169,10 +182,12 @@ export default function ProductList() {
 
       <div className="grid">
         {products.map((p) => (
+          // 嵌入模式（embedded=true）下禁用卡片点击跳详情：避免把宿主路由切到 /products/:id。
+          // 常规模式下点击卡片整体跳转到该商品详情页。
           <div
             key={p.id}
             className="product-card"
-            onClick={() => navigate(`/products/${p.id}`)}
+            onClick={embedded ? undefined : () => navigate(`/products/${p.id}`)}
           >
             <div className="product-img">{p.image}</div>
             <div className="product-info">

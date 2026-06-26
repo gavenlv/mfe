@@ -15,6 +15,17 @@
  * 关键概念——简易路由匹配：
  *  - 这里没用 <Route> 声明式路由，而是用正则匹配 pathname，做一个轻量分发。
  *  - 匹配 /products/数字 → 商品详情；其余 → 商品列表。
+ *
+ * 关键概念——embedded（嵌入模式）与 initialCategory（初始分类）：
+ *  - 进阶用法：本微前端除了被 shell 直接作为“页面”加载，还可能被另一个微前端
+ *    （workspace）作为“子组件”嵌入，或在主应用的 /multi 多实例页里同时装载多份。
+ *  - embedded=true 时，本组件不再根据 URL 路由分发，而是始终渲染 ProductList，
+ *    并把 embedded 透传给它，让列表关闭“卡片点击跳详情”的导航行为，
+ *    使其成为一个“只展示/可加购”的独立组件，不会把宿主的路由搅乱。
+ *  - initialCategory 用于“同子应用不同数据”的演示：多个 products 实例分别传入
+ *    不同的初始分类（如 '数码' / '电脑' / '穿戴'），各自展示不同数据，互不影响。
+ *  - 注意：useLocation 必须无条件调用（React Hooks 规则），所以即便 embedded
+ *    模式用不到 location，也要在分支之前先调用。
  */
 
 // React：JSX 运行时依赖（shared 复用宿主实例）
@@ -28,10 +39,21 @@ import ProductList from './components/ProductList.jsx';
 import ProductDetail from './components/ProductDetail.jsx';
 
 // 本微前端的根组件，也是被 exposes('./App') 暴露给宿主的模块
-export default function ProductsApp() {
-  // useLocation() 返回当前路由 location 对象，pathname 即 URL 的路径部分
+// props 说明：
+//  - embedded: boolean，嵌入模式。true 时始终渲染列表，不做详情路由分发
+//  - initialCategory: string，列表的初始分类（如 '数码'），用于多实例区分数据
+export default function ProductsApp({ initialCategory, embedded } = {}) {
+  // useLocation() 返回当前路由 location 对象，pathname 即 URL 的路径部分。
+  // 必须在所有 return 之前无条件调用，否则违反 Hooks 规则。
   const location = useLocation();
-  // 用正则匹配路径形如 /products/123 的 URL：
+
+  // 嵌入模式：始终渲染 ProductList，不做 URL 路由分发。
+  // 这样被 workspace 嵌入或在 /multi 多实例页里时，不会因宿主 URL 变化而切到详情。
+  if (embedded) {
+    return <ProductList initialCategory={initialCategory} embedded />;
+  }
+
+  // 常规模式：用正则匹配路径形如 /products/123 的 URL：
   //  - ^\/products\/  以 /products/ 开头
   //  - (\d+)           捕获一段数字（商品 id）
   //  - $               直到结尾

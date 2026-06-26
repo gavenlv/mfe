@@ -23,6 +23,12 @@ const features = [
   { icon: '📋', title: '订单微前端', desc: '结算与订单，端口 5177', to: '/orders' },
 ];
 
+// 进阶演示入口：嵌套联邦 + 多实例
+const advanced = [
+  { icon: '🧩', title: '工作台（嵌套联邦）', desc: 'workspace(5178) 被 shell 加载，又内部加载 products/cart，形成三层联邦', to: '/workspace' },
+  { icon: '🗂️', title: '多实例演示', desc: '同一子应用装载多份（数码/电脑/穿戴），同子应用不同数据 + 不同子应用', to: '/multi' },
+];
+
 // 首页组件：Hero 区 + 模块卡片区 + 架构图区
 export default function Home() {
   return (
@@ -51,26 +57,47 @@ export default function Home() {
         </div>
       </section>
 
+      {/* 进阶演示入口：嵌套联邦 + 多实例 */}
+      <section className="features">
+        <h2>进阶演示</h2>
+        <div className="feature-grid">
+          {advanced.map((f) => (
+            <Link to={f.to} key={f.title} className="feature-card">
+              <div className="feature-icon">{f.icon}</div>
+              <h3>{f.title}</h3>
+              <p>{f.desc}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       {/* 架构示意图：用 <pre> 展示 ASCII 字符画，说明整体架构 */}
       <section className="arch">
         <h2>架构说明</h2>
         <div className="arch-box">
-          <pre>{`┌─────────────────────────────────────┐
-│  Shell 主应用 (localhost:5173)      │
-│  路由编排 · 全局布局 · 跨模块通信    │
-└──────┬──────────┬─────────┬────────┘
-       │          │         │
-   ┌───▼───┐ ┌───▼──┐ ┌───▼──┐ ┌────▼───┐
-   │Products│ │ Cart │ │ Auth │ │ Order  │
-   │ :5174  │ │:5175 │ │:5176 │ │ :5177  │
-   └───┬───┘ └───┬──┘ └───┬──┘ └────┬───┘
-       │         │        │         │
-       └─────────┴────────┴─────────┘
-                    │
-            ┌───────▼────────┐
-            │  Express +SQLite│
-            │  :3001          │
-            └────────────────┘`}</pre>
+          <pre>{`┌──────────────────────────────────────────┐
+│  Shell 主应用 (localhost:5173)           │
+│  路由编排 · 全局布局 · 跨模块通信         │
+└──┬───────┬──────────┬─────────┬────────┘
+   │       │          │         │
+   │  ┌────▼───┐ ┌────▼──┐ ┌────▼──┐ ┌─────▼────┐
+   │  │Products│ │ Cart  │ │ Auth  │ │  Order   │
+   │  │ :5174  │ │:5175  │ │:5176  │ │  :5177   │
+   │  └────┬───┘ └───┬──┘ └───┬───┘ └─────┬────┘
+   │       │         │        │           │
+   │  ┌────▼──────────▼────────▼───────────▼───┐
+   └─►│  Workspace(:5178) 嵌套联邦 · 又加载 ↑  │
+      │  /workspace 页 · 同时被 shell 加载      │
+      └────────────────────────────────────────┘
+                      │
+              ┌───────▼────────┐
+              │ Express +SQLite│
+              │  :3001         │
+              └────────────────┘
+
+多实例(/multi)：shell 同时装载 3 份 Products + 1 份 Cart
+  · 同子应用不同数据：3 份 Products 各传不同 initialCategory
+  · 不同子应用：第 4 个 Tab 是 Cart`}</pre>
         </div>
       </section>
     </div>

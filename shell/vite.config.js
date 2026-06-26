@@ -51,6 +51,9 @@ export default defineConfig({
         cartApp: 'http://localhost:5175/assets/remoteEntry.js',
         authApp: 'http://localhost:5176/assets/remoteEntry.js',
         orderApp: 'http://localhost:5177/assets/remoteEntry.js',
+        // workspaceApp：嵌套联邦的关键。workspace 自身也是 remote（端口 5178），
+        // 同时它内部又会作为 host 加载 products/cart，形成三层联邦。
+        workspaceApp: 'http://localhost:5178/assets/remoteEntry.js',
       },
       // shared：把 react、react-dom、react-router-dom 声明为共享依赖。
       // 意义：主应用和所有子应用运行时只会加载“一份”React 实例（单例化），
