@@ -1,0 +1,16 @@
+{
+  "name": "shop-mfe",
+  "version": "1.0.0",
+  "private": true,
+  "description": "基于 Module Federation 的微前端电商应用",
+  "scripts": {
+    "build": "npm run build --prefix products && npm run build --prefix cart && npm run build --prefix auth && npm run build --prefix order && npm run build --prefix shell",
+    "start": "concurrently -n server,shell,products,cart,auth,order -c \"#92c5ff,#ff8f5e,#a5e3a5,#ffd479,#c9a0ff,#7fdfe5\" \"npm start --prefix server\" \"npm run preview --prefix shell\" \"npm run preview --prefix products\" \"npm run preview --prefix cart\" \"npm run preview --prefix auth\" \"npm run preview --prefix order\"",
+    "dev": "concurrently -n server,shell,products,cart,auth,order -c \"#92c5ff,#ff8f5e,#a5e3a5,#ffd479,#c9a0ff,#7fdfe5\" \"npm run dev --prefix server\" \"npm run dev --prefix shell\" \"npm run dev --prefix products\" \"npm run dev --prefix cart\" \"npm run dev --prefix auth\" \"npm run dev --prefix order\"",
+    "seed": "npm run seed --prefix server",
+    "install:all": "npm install --prefix server && npm install --prefix shell && npm install --prefix products && npm install --prefix cart && npm install --prefix auth && npm install --prefix order"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
