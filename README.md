@@ -1,0 +1,2 @@
+# mfe
+micro frontend
